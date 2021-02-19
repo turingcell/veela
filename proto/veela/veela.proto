@@ -1,0 +1,169 @@
+syntax = "proto3";
+package veela;
+
+enum StatusCode {
+    OK = 0;
+    UNSPECIFIED = 1;
+    TIMEOUT = 2;
+    GROUP_NAME_DONT_MATCH = 3;
+    ACCEPTOR_ID_DONT_MATCH = 4;
+    EAGAIN = 5;
+    RESOURCE_UNAVAILABLE = 6;
+}
+
+message NetworkAddr{
+	string protocol = 1;  // tcp, udp ...
+	string ip = 2;
+	uint32 port = 3;
+}
+
+message ElectionResult{
+    // must >= 2
+	int32 termLen = 1;
+    // ascending order
+    repeated uint64 acceptorIDArray = 2;
+}
+
+message AcceptValueMemberIdx {
+    int32 offset = 1;
+    int32 len = 2;
+}
+
+message AcceptValueMemberIdxs {
+    repeated AcceptValueMemberIdx idxs = 1;
+}
+
+message AcceptorInOnePaxosInstanceState{
+    bool chosenFlag = 1;
+    // p_e: zero means init state
+    uint64 prepareEpoch = 2;
+    // a_e: zero means invalid
+    uint64 acceptEpoch = 3;
+    // a_v_id: zero means invalid
+    uint64 acceptValueID = 4;
+    // acceptValueID map to logdb idx which stores the marshaled accept value
+    map<uint64, uint64> acceptValueLogdbIdxMap = 5;
+}
+
+message AcceptorIDMapToNetworkAddr{
+    map<uint64, NetworkAddr> acceptorIDMapToNetworkAddr = 1;
+}
+
+message AcceptorTermState {
+    uint64 startFromInstE = 1;
+    ElectionResult electionResult = 2;
+    // 	map: acceptorIDs -> acceptorAddrHints
+    AcceptorIDMapToNetworkAddr acceptorIDMapToNetworkAddr = 3;
+    // if true means all inst in this election term has already been chosen
+    bool allChosenFlag = 4;
+    repeated AcceptorInOnePaxosInstanceState acceptorInOnePaxosInstanceStateArray = 5;
+    // zero means end
+    uint64 logdbIdxOfLastAcceptorTermState = 6;
+}
+
+message AcceptorStateSummary{
+    uint64 deleteInstBeforeEpoch = 1;
+    uint64 currentInstEpochRangeLeftE = 2;
+    uint64 currentInstEpochRangeRightE = 3;
+    // ascending order by `startFromInstE` and must be continuous
+    repeated AcceptorTermState acceptorTermStates = 4;
+}
+
+message AcceptorRpcPrepareRequest{
+    string groupName = 1;
+    // zero means it is not a proposer
+    uint64 proposerID = 2;
+    // must > 0
+    uint64 acceptorID = 3;
+    // must > 0
+    uint64 instE = 4;
+    uint64 prepareEpoch = 5;
+    bool onlyRetureAcceptValueIDFlag = 6;
+}
+
+message AcceptorRpcPrepareResponese{
+    int32 statusCode = 1;
+    string errStr = 2;
+    bool promisedFlag = 3;
+    AcceptorInOnePaxosInstanceState acceptorInOnePaxosInstanceState = 4;
+    // valid AcceptValueBs' len should always > 0
+    map<uint64, bytes> acceptValueIDMapToAcceptValueBs = 5;
+}
+
+message AcceptorRpcAcceptRequest{
+    string groupName = 1;
+    // zero means it is not a proposer
+    uint64 proposerID = 2;
+    // must > 0
+    uint64 acceptorID = 3;
+    // must > 0
+    uint64 instE = 4;
+    uint64 preparedEpoch = 5;
+    uint64 toAcceptValueID = 6;
+    bool onlyContainAcceptValueIDFlag = 7;
+    bytes toAcceptValueBs = 8;
+}
+
+message AcceptorRpcAcceptResponse{
+    int32 statusCode = 1;
+    string errStr = 2;
+    bool acceptedFlag = 3;
+    AcceptorInOnePaxosInstanceState acceptorInOnePaxosInstanceState = 4;
+}
+
+message AcceptorRpcChosenNotifyRequest{
+    string groupName = 1;
+    // zero means it is not a proposer
+    uint64 proposerID = 2;
+    // must > 0
+    uint64 acceptorID = 3;
+    // must > 0
+    uint64 instE = 4;
+    uint64 acceptValueID = 5;
+    bool onlyContainAcceptValueIDFlag = 6;
+    uint64 acceptValueBs = 7;
+}
+
+message AcceptorRpcChosenNotifyResponse{
+    int32 statusCode = 1;
+    string errStr = 2;
+    bool chosenFlag = 3;
+}
+
+message AcceptorRpcGetAcceptValueByIDRequest{
+    string groupName = 1;
+    // zero means it is not a proposer
+    uint64 proposerID = 2;
+    // must > 0
+    uint64 acceptorID = 3;
+    // must > 0
+    uint64 instE = 4;
+    repeated uint64 acceptValueIDs = 5;
+}
+
+message AcceptorRpcGetAcceptValueByIDResponse{
+    int32 statusCode = 1;
+    string errStr = 2;
+    AcceptorInOnePaxosInstanceState acceptorInOnePaxosInstanceState = 3;
+    map<uint64, bytes> acceptValueIDMapToAcceptValueBs = 4;
+}
+
+message AcceptorRpcGetSummaryRequest{
+    string groupName = 1;
+    // zero means it is not a proposer
+    uint64 proposerID = 2;
+    // must > 0
+    uint64 acceptorID = 3;
+    // true: which means always get the latest N terms and must have unchosen inst in each term
+    bool onlyGetTermsContainUnchosenInstFlag = 4;
+    // only valid when onlyGetTermsContainUnchosenInstFlag is false
+    // interval [getInstEpochRangeLeftE, getInstEpochRangeRightE] must contain one or serveral continuous whole terms
+    uint64 getInstEpochRangeLeftE = 5;
+    uint64 getInstEpochRangeRightE = 6;
+}
+
+message AcceptorRpcGetSummaryResponse{
+    int32 statusCode = 1;
+    string errStr = 2;
+    AcceptorStateSummary summary = 3;
+}
