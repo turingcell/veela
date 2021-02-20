@@ -10,6 +10,10 @@ Welcome to contribute 🎉🎉🎉
 
 Before your pull request is merged, you must sign the [Developer Certificate of Origin](https://developercertificate.org/). Please visit the [DCO](https://github.com/apps/dco) for more information. Basically you add the `Signed-off-by: Real Name <e@mail.addr>` inside the commit message to claim all your contribution adheres the requirements inside the [DCO](https://github.com/apps/dco).
 
+## Donation and Transparency
+
+Please visit this [repository](https://github.com/turingcell/Donation-And-Transparency) for more information.
+
 ## Copyright and License
 
 Copyright (C) 2021, by the Veela Authors
