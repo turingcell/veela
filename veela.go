@@ -19,8 +19,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/turingcell/veela/log"
-	"github.com/turingcell/veela/logdb"
+	"github.com/turingcell/veela/dummy/log"
+	"github.com/turingcell/veela/dummy/logdb"
 	vpb "github.com/turingcell/veela/proto/veela"
 	"github.com/turingcell/veela/util"
 )
