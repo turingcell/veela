@@ -66,7 +66,7 @@ AcceptValueID的具体定义和简短的正确性证明如下：
 
 任意一个help-proposed PA操作中所提交的AcceptValue一定源于一个self-proposed PA操作中的AcceptValue（或者说二者相同），这样就能证明AcceptValueID和AcceptValue在此Paxos Instance中严格一一映射，即如果两个AcceptValue的ID相同，那么这两个AcceptValue一定相同。
 
-又因为self-proposed PA操作在一个Paxos Instance中存在总数上限(N+1)/2`(N为成员数)，那么我们可以得出在一个Paxos Instance中最多可以拥有`(N+1)/2`个不同的AcceptValue，根据这个结论，我们发现即使我们把所有不同的AcceptValue全部存储起来，其磁盘空间总消耗也是存在上限的。
+又因为self-proposed PA操作在一个Paxos Instance中存在总数上限 `(N+1)/2` (N为成员数)，那么我们可以得出在一个Paxos Instance中最多可以拥有 `(N+1)/2` 个不同的AcceptValue，根据这个结论，我们发现即使我们把所有不同的AcceptValue全部存储起来，其磁盘空间总消耗也是存在上限的。
 
 ### 运行中持续的拜占庭错误检测
 
