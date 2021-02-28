@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -175,6 +176,85 @@ func AppendAndSyncForRawOP(fp *os.File, key int64, data []byte) (time.Duration, 
 	return time.Now().Sub(start), nil
 }
 
+//test preallocated file append+fdatasync
+//count: loop count
+//data: data to write on each loop
+//return: total time spend if no error occured
+func TestRawFdatasyncOP(count int, data []byte) (time.Duration, error) {
+	var err error
+	var interval time.Duration
+	var fp *os.File
+
+	//prepare test file
+	os.Remove("rawop.db")
+	sz := count * (len(data) + len(string(count)))
+	fp, err = os.OpenFile("rawop.db", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	ret, err := fp.Seek(int64(sz), os.SEEK_SET)
+	if ret != int64(sz) || err != nil {
+		fmt.Println("fp.Seek:", ret, err)
+		panic("err")
+	}
+	writed, err := fp.Write([]byte("1"))
+	if writed != 1 || err != nil {
+		fmt.Println("fp.Write:", writed, err)
+		panic("err")
+	}
+	t1 := time.Now()
+	err = fp.Sync()
+	t2 := time.Now()
+	if err != nil {
+		fmt.Println("fp.Sync:", err)
+		panic("err")
+	} else {
+		fmt.Println("takes", t2.Sub(t1), "sync", sz, "bytes lseek file")
+	}
+	ret, err = fp.Seek(0, os.SEEK_SET)
+	if ret != 0 || err != nil {
+		fmt.Println("fp.Seek2:", ret, err)
+		panic("err")
+	}
+
+	//start!
+	interval = time.Duration(0)
+	for i := 0; i < count; i++ {
+		ret, err := AppendAndSyncForRawFdatasyncOP(fp, int64(i), data)
+		if err != nil {
+			return time.Duration(0), err
+		}
+		interval += ret
+	}
+
+	err = fp.Close()
+	if err != nil {
+		return time.Duration(0), err
+	}
+	return interval, nil
+}
+func AppendAndSyncForRawFdatasyncOP(fp *os.File, key int64, data []byte) (time.Duration, error) {
+	var start time.Time
+	var err error
+
+	start = time.Now()
+	_, err = fp.Write([]byte(strconv.FormatInt(key, 10)))
+	if err != nil {
+		return time.Duration(0), err
+	}
+	_, err = fp.Write(data)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	//err = fp.Sync()
+	fd := fp.Fd()
+	err = syscall.Fdatasync(int(fd))
+	if err != nil {
+		return time.Duration(0), err
+	}
+	return time.Now().Sub(start), nil
+}
+
 //test func for bitcask
 //count: loop count
 //data: data to write in each loop
@@ -283,7 +363,7 @@ func main() {
 	pcount = flag.Int("count", 500, "loop count")
 	punit = flag.String("unit", "1MB", "chunk size e.g. 1GB, 2MB, 3kb, 4b")
 	ptarget = flag.String("target", "raw",
-		"test target, 'raw': direct append+sync, 'bolt': boltdb, 'bitcask': for bitcask, 'pebble': for pebble")
+		"test target, 'raw': direct append+sync, 'rawFdatasync': preallocated file append+fdatasync, 'bolt': boltdb, 'bitcask': for bitcask, 'pebble': for pebble")
 	pBitcaskMaxFileSize = flag.Int("bitcaskfilesize", 1<<20, /*1MB*/
 		"max size on a signle data file, in bytes")
 	pBitcaskMaxKeySize = flag.Uint("bitcaskkeysize", 64,
@@ -307,6 +387,15 @@ func main() {
 	case "raw":
 		fmt.Println("for direct append+sync:")
 		elapsed, err = TestRawOP(*pcount, data)
+		if err == nil {
+			PrintStats(elapsed, pcount, punit, unit)
+		} else {
+			fmt.Println(err)
+		}
+		break
+	case "rawFdatasync":
+		fmt.Println("preallocated file append+fdatasync:")
+		elapsed, err = TestRawFdatasyncOP(*pcount, data)
 		if err == nil {
 			PrintStats(elapsed, pcount, punit, unit)
 		} else {
