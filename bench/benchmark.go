@@ -57,7 +57,7 @@ func TestBolt(count int, data []byte) (time.Duration, error) {
 	var err error
 	var db *bolt.DB
 	var interval time.Duration
-	var filename = "/tmp/bolt.db"
+	var filename = "./bolt.db"
 
 	//create the new data file in current directory.
 	os.Remove(filename)
@@ -88,7 +88,7 @@ func TestBolt(count int, data []byte) (time.Duration, error) {
 		interval += ret
 	}
 	db.Close()
-	os.Remove(filename)
+	//os.Remove(filename)
 
 	return interval, nil
 }
@@ -131,7 +131,7 @@ func TestRawOP(count int, data []byte) (time.Duration, error) {
 	var err error
 	var interval time.Duration
 	var fp *os.File
-	var filename = "/tmp/rawop.db"
+	var filename = "./rawop.db"
 
 	//prepare test file
 	os.Remove(filename)
@@ -154,7 +154,7 @@ func TestRawOP(count int, data []byte) (time.Duration, error) {
 	if err != nil {
 		return time.Duration(0), err
 	}
-	os.Remove(filename)
+	//os.Remove(filename)
 	return interval, nil
 }
 func AppendAndSyncForRawOP(fp *os.File, key int64, data []byte) (time.Duration, error) {
@@ -187,9 +187,9 @@ func TestRawFdatasyncOP(count int, data []byte) (time.Duration, error) {
 	var fp *os.File
 
 	//prepare test file
-	os.Remove("rawop.db")
+	os.Remove("rawFdatasyncOP.db")
 	sz := count * (len(data) + len(string(count)))
-	fp, err = os.OpenFile("rawop.db", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	fp, err = os.OpenFile("rawFdatasyncOP.db", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return time.Duration(0), err
 	}
@@ -272,7 +272,7 @@ func TestBitcask(count int, data []byte, conf *BitcaskConfig) (time.Duration, er
 	var err error
 	var elapsed time.Duration
 	var start time.Time
-	var filename = "/tmp/bitcask.db"
+	var filename = "./bitcask.db"
 
 	//open file with specified config.
 	//auto-syncronization after each insert is enabled
@@ -305,7 +305,7 @@ func TestBitcask(count int, data []byte, conf *BitcaskConfig) (time.Duration, er
 	if err = db.Close(); err != nil {
 		return time.Duration(0), err
 	}
-	os.RemoveAll(filename)
+	//os.RemoveAll(filename)
 	return elapsed, nil
 }
 
@@ -318,7 +318,7 @@ func TestPebble(count int, data []byte) (time.Duration, error) {
 	var db *pebble.DB
 	var start time.Time
 	var elapsed time.Duration
-	var filename = "/tmp/pebble.db"
+	var filename = "./pebble.db"
 
 	//prepare db with default configuration
 	os.RemoveAll(filename)
@@ -342,7 +342,7 @@ func TestPebble(count int, data []byte) (time.Duration, error) {
 	if err != nil {
 		return time.Duration(0), err
 	}
-	os.RemoveAll(filename)
+	//os.RemoveAll(filename)
 	return elapsed, nil
 }
 
@@ -365,11 +365,11 @@ func main() {
 	punit = flag.String("unit", "1MB", "chunk size e.g. 1GB, 2MB, 3kb, 4b")
 	ptarget = flag.String("target", "raw",
 		"test target, 'raw': direct append+sync, 'rawFdatasync': preallocated file append+fdatasync, 'bolt': boltdb, 'bitcask': for bitcask, 'pebble': for pebble")
-	pBitcaskMaxFileSize = flag.Int("bitcaskfilesize", 1<<20, /*1MB*/
+	pBitcaskMaxFileSize = flag.Int("bitcaskfilesize", 1<<30, /*1GB*/
 		"max size on a signle data file, in bytes")
 	pBitcaskMaxKeySize = flag.Uint("bitcaskkeysize", 64,
 		"max size on key, in bytes")
-	pBitcaskMaxValueSize = flag.Uint64("bitcaskvaluesize", 1<<20, /*1MB*/
+	pBitcaskMaxValueSize = flag.Uint64("bitcaskvaluesize", 1<<30, /*1GB*/
 		"max size on value, in bytes")
 
 	flag.Parse()
@@ -389,6 +389,7 @@ func main() {
 
 	//start!
 	fmt.Printf("loop count: %d, chunk size: %s\n\n", *pcount, *punit)
+	fmt.Println("benchmark file will generate under the pwd directory")
 	switch *ptarget {
 	case "raw":
 		fmt.Println("for direct append+sync:")
