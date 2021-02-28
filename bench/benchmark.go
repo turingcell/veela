@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -380,6 +381,11 @@ func main() {
 
 	//default 1MB size data for test
 	data = make([]byte, unit)
+	randWrited, err := rand.Read(data)
+	if randWrited != len(data) || err != nil {
+		fmt.Println("rand.Read:", randWrited, err)
+		panic("unexpected")
+	}
 
 	//start!
 	fmt.Printf("loop count: %d, chunk size: %s\n\n", *pcount, *punit)
