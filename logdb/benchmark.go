@@ -55,10 +55,11 @@ func TestBolt(count int, data []byte) (time.Duration, error) {
 	var err error
 	var db *bolt.DB
 	var interval time.Duration
+	var filename = "/tmp/bolt.db"
 
 	//create the new data file in current directory.
-	os.Remove("bolt.db")
-	db, err = bolt.Open("bolt.db", 0600, nil)
+	os.Remove(filename)
+	db, err = bolt.Open(filename, 0600, nil)
 	if err != nil{
 		log.Fatal(err)
 		os.Exit(1)
@@ -85,6 +86,7 @@ func TestBolt(count int, data []byte) (time.Duration, error) {
 		interval += ret
 	}
 	db.Close()
+	os.Remove(filename)
 
 	return interval, nil
 }
@@ -127,10 +129,11 @@ func TestRawOP(count int, data []byte) (time.Duration, error){
 	var err error
 	var interval time.Duration
 	var fp *os.File
+	var filename = "/tmp/rawop.db"
 
 	//prepare test file
-	os.Remove("rawop.db")
-	fp, err = os.OpenFile("rawop.db", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	os.Remove(filename)
+	fp, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil{
 		return time.Duration(0), err 
 	}
@@ -149,6 +152,7 @@ func TestRawOP(count int, data []byte) (time.Duration, error){
 	if err != nil{
 		return time.Duration(0), err
 	}
+	os.Remove(filename)
 	return interval, nil
 }
 func AppendAndSyncForRawOP(fp *os.File, key int64, data []byte) (time.Duration, error){
@@ -186,11 +190,12 @@ func TestBitcask(count int, data []byte, conf *BitcaskConfig) (time.Duration, er
 	var err error
 	var elapsed time.Duration
 	var start time.Time
+	var filename = "/tmp/bitcask.db"
 	
 	//open file with specified config.
 	//auto-syncronization after each insert is enabled
-	os.RemoveAll("bitcask.db")
-	db, err = bitcask.Open("bitcask.db",
+	os.RemoveAll(filename)
+	db, err = bitcask.Open(filename,
 		bitcask.WithSync(true),
 		bitcask.WithMaxDatafileSize(conf.fileSize),
 		bitcask.WithMaxKeySize(conf.keySize),
@@ -218,6 +223,7 @@ func TestBitcask(count int, data []byte, conf *BitcaskConfig) (time.Duration, er
 	if err = db.Close(); err != nil{
 		return time.Duration(0), err
 	}
+	os.RemoveAll(filename)
 	return elapsed, nil
 }
 
@@ -230,10 +236,11 @@ func TestPebble(count int, data []byte) (time.Duration, error){
 	var db *pebble.DB
 	var start time.Time
 	var elapsed time.Duration
+	var filename = "/tmp/pebble.db"
 	
 	//prepare db with default configuration
-	os.RemoveAll("pebble.db")
-	db, err = pebble.Open("pebble.db", nil)
+	os.RemoveAll(filename)
+	db, err = pebble.Open(filename, nil)
 	if err != nil{
 		return time.Duration(0), err
 	}
@@ -253,6 +260,7 @@ func TestPebble(count int, data []byte) (time.Duration, error){
 	if err != nil{
 		return time.Duration(0), err
 	}
+	os.RemoveAll(filename)
 	return elapsed, nil
 }
 
