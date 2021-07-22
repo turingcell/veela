@@ -15,7 +15,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/cockroachdb/pebble"
-	"github.com/prologic/bitcask"
+	"git.mills.io/prologic/bitcask"
 )
 
 func ParseUnit(punit *string) (int64, error) {
